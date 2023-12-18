@@ -38,6 +38,59 @@ fn main() -> Result<()>{
     let root = tree.insert(root.as_ref(), key, &value)?;
     assert_ne!(root, None);
 
+    // Generate the merkle proof for the root and the key
+    let not_key = random_hash();
+    assert_eq!(tree.get(root.as_ref(), &not_key).unwrap(), None);    
+
     Ok(())
 }
 
+#[cfg(test)]
+#[test]
+fn setup_smt() {
+    let mut tree = Monotree::default();
+    let mut root = None;
+
+    (1..1000).for_each(|seq_no: u64| {
+        let seq_no_bytes = seq_no.to_be_bytes();
+        let hashed_txn = random_hash();
+        let mut hasher = Hasher::new();
+        hasher.update(&seq_no_bytes);
+        let hash = hasher.finalize();
+        let key = hash.as_bytes();
+
+        root = tree.insert(root.as_ref(), key, &hashed_txn).unwrap();
+        assert_ne!(root, None);
+        println!("Root: {:?}", root); 
+    });
+    println!("Root: {:?}", root);
+}
+
+#[cfg(test)]
+#[test]
+fn remove_test() {
+    let mut tree = Monotree::default();
+    let mut root = None;
+
+    (1..1000).for_each(|seq_no: u64| {
+        let seq_no_bytes = seq_no.to_be_bytes();
+        let hashed_txn = random_hash();
+        let mut hasher = Hasher::new();
+        hasher.update(&seq_no_bytes);
+        let hash = hasher.finalize();
+        let key = hash.as_bytes();
+
+        root = tree.insert(root.as_ref(), key, &hashed_txn).unwrap();
+        assert_ne!(root, None);
+    });
+    
+    let seq_no_bytes = 100u64.to_be_bytes();
+    let mut hasher = Hasher::new();
+    hasher.update(&seq_no_bytes);
+    let hash = hasher.finalize();
+    let remove_key = hash.as_bytes();
+    
+    root = tree.remove(root.as_ref(), remove_key).unwrap();
+    assert_eq!(tree.get(root.as_ref(), remove_key).unwrap(), None);
+
+}

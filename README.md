@@ -1,0 +1,1 @@
+# Credential Revocation with zk-SNARK and Sparse Merkle Tree
