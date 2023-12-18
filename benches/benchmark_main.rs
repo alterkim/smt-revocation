@@ -18,8 +18,8 @@ fn generate_proof() -> (Proof<Bls12>, VerifyingKey<Bls12>) {
     (proof, parameters.vk)
 }
 
-fn verify_proof_transaction(proof: Proof<Bls12>, vk: VerifyingKey<Bls12>) ->(bool, Vec<u8>) {
-    let txn = Transaction::new("1".to_string(), proof, vk, 1);
+fn verify_proof_transaction(proof: Proof<Bls12>, vk: VerifyingKey<Bls12>, seq_no: u64) ->(bool, Vec<u8>) {
+    let txn = Transaction::new("1".to_string(), proof, vk, seq_no);
     let pvk = create_pvk(&txn.payload.verifying_key);
     let verified = verify_proof(&pvk, &txn.payload.proof);
     let hashed_txn = txn.hash().unwrap();
@@ -72,9 +72,9 @@ fn remove(tree: &mut Monotree, root: Option<[u8; 32]>, n: u64) {
     assert_eq!(tree.get(root.as_ref(), key).unwrap(), None);
 }
 
-
+// Generate proof benchmark
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("generate_proof 100", |b| {
+    c.bench_function("generate_proof", |b| {
         b.iter(|| {
             for _ in 0..100 {
                 black_box(generate_proof());
@@ -83,13 +83,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
+// Verify proof & create transaction benchmark
 fn criterion_benchmark2(c: &mut Criterion) {
     c.bench_function("verify_proof_transaction", |b| {
         b.iter_with_setup(
             || generate_proof(),
             |(proof, vk)| {
-                for _ in 0..10{
-                    black_box(verify_proof_transaction(proof.clone(), vk.clone()));
+                for n in 0..100{
+                    black_box(verify_proof_transaction(proof.clone(), vk.clone(), n));
                 }
             },
         )
@@ -139,5 +140,5 @@ fn criterion_benchmark5(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, criterion_benchmark5);
+criterion_group!(benches, criterion_benchmark2);
 criterion_main!(benches);
